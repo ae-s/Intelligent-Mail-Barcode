@@ -95,26 +95,29 @@ class IMBarcode
     # Alter codeword J for orientation information
     code_j *= 2
 
+    check = 0x751
+    check = sprintf('%011b', check)
+    print "Checksum is #{check}\n"
+
     # Stow bit 11 of the checksum in codeword A
-    if (check & 0x400)
+    if (check[0].chr == '1')
       code_a += 659
     end
 
     printf("%d %d %d %d %d %d %d %d %d %d\n",
            code_a, code_b, code_c, code_d, code_e,
            code_f, code_g, code_h, code_i, code_j)
-    check = sprintf('%011b', check)
 
-    bitstring = make_symbol(code_a, check[0] == '1') +
-      make_symbol(code_b, check[1] == '1') +
-      make_symbol(code_c, check[2] == '1') +
-      make_symbol(code_d, check[3] == '1') +
-      make_symbol(code_e, check[4] == '1') +
-      make_symbol(code_f, check[5] == '1') +
-      make_symbol(code_g, check[6] == '1') +
-      make_symbol(code_h, check[7] == '1') +
-      make_symbol(code_i, check[8] == '1') +
-      make_symbol(code_j, check[9] == '1')
+    bitstring = make_symbol(code_a, check[10].chr == '1') +
+      make_symbol(code_b, check[9].chr == '1') +
+      make_symbol(code_c, check[8].chr == '1') +
+      make_symbol(code_d, check[7].chr == '1') +
+      make_symbol(code_e, check[6].chr == '1') +
+      make_symbol(code_f, check[5].chr == '1') +
+      make_symbol(code_g, check[4].chr == '1') +
+      make_symbol(code_h, check[3].chr == '1') +
+      make_symbol(code_i, check[2].chr == '1') +
+      make_symbol(code_j, check[1].chr == '1')
 
     print bitstring, "\n";
     print perturb(bitstring), "\n";
