@@ -1,3 +1,29 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int *argc, char **argv)
+{
+	int *table5, *table2, i;
+
+	table5 = malloc(1286 * sizeof(int));
+	table2 = malloc(78 * sizeof(int));
+
+	InitializeNof13Table(table5, 5, 1287);
+	InitializeNof13Table(table2, 2, 78);
+
+	printf("module USPScode\n  CODEWORDS = [");
+	for (i = 0; i < 1287; i++) {
+		printf("%d, ", table5[i]);
+	}
+
+	for (i = 0; i < 78; i++) {
+		printf("%d, ", table2[i]);
+	}
+	printf("]\nend\n");
+
+	return;
+}
+
 extern unsigned short
 ReverseUnsignedShort( unsigned short  Input )
 {
@@ -23,8 +49,7 @@ ReverseUnsignedShort( unsigned short  Input )
  **  TableNof13 is a pointer to the resulting table
  ******************************************************************************/
 
-extern BOOLEAN
-InitializeNof13Table( int *TableNof13  ,
+int InitializeNof13Table( int *TableNof13  ,
                       int  N           ,
                       int  TableLength )
 {
@@ -68,12 +93,7 @@ InitializeNof13Table( int *TableNof13  ,
 
 	/* Make sure the lower and upper parts of the table meet properly */
 	if ( LUT_LowerIndex != (LUT_UpperIndex+1) )
-		return FALSE;
+		return 0;
 
-#if 1
-	for ( LUT_LowerIndex = 0; LUT_LowerIndex < TableLength; LUT_LowerIndex++ )
-		printf("Index %4d Value %4.4X\n", LUT_LowerIndex, TableNof13[LUT_LowerIndex]);
-#endif
-
-	return TRUE;
+	return 1;
 }

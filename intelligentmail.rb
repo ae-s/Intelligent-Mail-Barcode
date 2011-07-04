@@ -3,7 +3,10 @@
 # Cribbed from the specification available at
 # https://ribbs.usps.gov/intelligentmail_mailpieces/documents/tech_guides/SPUSPSG.pdf
 
+require 'codeword.rb'
+
 class IMBarcode
+  include USPScode
   attr_reader :binary
   def initialize(code_id,
                  service_id,
@@ -13,9 +16,20 @@ class IMBarcode
                  zip_route = nil,
                  zip_point = nil)
 
+    # [[:digit:]][01234]
     @code_id = code_id
+
+    # [[:digit:]]{3}
     @service_id = service_id
+
+    # 000000000 - 999999999
+    # or
+    # 000000 - 999999
     @mailer_id = mailer_id
+
+    # 000000 - 999999
+    # or
+    # 000000000 - 999999999
     @serial = serial
 
     if (zip_zone == nil)
@@ -146,52 +160,23 @@ class IMBarcode
 
   # These tables are produced by a fragment of C code which increments
   # through all possible 13-bit numbers, plucking out only the numbers
-  # which satisfy the M-of-13-bits-set condition.  It does this in an
-  # unusual order: a M-of-13 codeword is produced and emitted.  Then
-  # it is bit-order-reversed and emitted again.
+  # which satisfy the M-of-13-bits-set condition.
+
+  # It does this in an unusual order: a M-of-13 codeword is produced
+  # and emitted.  Then it is bit-order-reversed and emitted again.  If
+  # the codeword is palindromic, it is put at the end of the table.
 
   # Table I contains 5-of-13 codewords, while Table II contains
-  # 2-of-13.
+  # 2-of-13.  This is a concatenation of both of them.
 
   # I'm not sure why this particular representation was chosen.
 
-  # If this table were short, like the 2-of-5 code, I would simply use
-  # a lookup table here.  But that seems entirely wrong for a 1287-row
-  # table.
-
-  def m_of_n(codeword, m, n=13)
-    number = 0
-    found = codeword
-    while (codeword + 1 > 0)
-      number += 1
-      str = sprintf("%b", number)
-      if (str.length > n)
-        throw Exception.new("Code #{codeword} out of range for #{m}-of-#{n} code")
-      end
-      if (str.delete('0').length == m)
-        codeword -= 1
-      end
+  def reflected_m_of_n(code_in)
+    if (code_in > CODEWORDS.length)
+      throw Exception.new("Code #{code_in} is out of range for this barcode symbology")
     end
 
-    return number
-  end
-
-  # TODO XXX
-  #
-  # It's not this simple.  Codes that are symmetric are banished to
-  # the end of the list.
-
-  def reflected_m_of_n(codeword, m, n=13)
-    if (((m == 5) and (n == 13) and (codeword > 1286)) or
-        ((m == 2) and (n == 13) and (codeword > 77)))
-      throw Exception.new("Code #{codeword} is out of range for reflected #{m}-of-#{n} code")
-    end
-
-    if codeword.odd?
-      return sprintf("%b", m_of_n((codeword-1)/2, m, n)).rjust(13).tr(' ', '0').reverse
-    else
-      return sprintf("%b", m_of_n((codeword)/2, m, n)).rjust(13).tr(' ', '0')
-    end
+    return sprintf("%b", CODEWORDS[code_in])
   end
 
   # If the corresponding CRC bit for this codeword is set, invert all
@@ -201,11 +186,7 @@ class IMBarcode
   # There will be exactly 2, 5, 8, or 11 bits set in the result.
 
   def make_symbol(codeword, invert=false)
-    if (codeword <= 1286)
-      symbol = reflected_m_of_n(codeword, 5, 13)
-    else
-      symbol = reflected_m_of_n(codeword - 1287, 2, 13)
-    end
+    symbol = reflected_m_of_n(codeword)
 
     if (invert)
       symbol.tr!('01', '10')
