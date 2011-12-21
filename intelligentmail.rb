@@ -109,29 +109,32 @@ class IMBarcode
     # Alter codeword J for orientation information
     code_j *= 2
 
-    check = 0x751
     check = sprintf('%011b', check)
     print "Checksum is #{check}\n"
 
+    check = check.rjust(11, '0').reverse
+    print "Checksum is #{check}\n"
+
     # Stow bit 11 of the checksum in codeword A
-    if (check[0].chr == '1')
+    if (check[10].chr == '1')
       code_a += 659
     end
 
-    printf("%d %d %d %d %d %d %d %d %d %d\n",
+    printf("codewords -\n% 4d\t% 4d\t% 4d\t% 4d\t% 4d\t% 4d\t% 4d\t% 4d\t% 4d\t% 4d\n" +
+                          "   A\t   B\t   C\t   D\t   E\t   F\t   G\t   H\t   I\t   J\n",
            code_a, code_b, code_c, code_d, code_e,
            code_f, code_g, code_h, code_i, code_j)
 
-    bitstring = make_symbol(code_a, check[10].chr == '1') +
-      make_symbol(code_b, check[9].chr == '1') +
-      make_symbol(code_c, check[8].chr == '1') +
-      make_symbol(code_d, check[7].chr == '1') +
-      make_symbol(code_e, check[6].chr == '1') +
+    bitstring = make_symbol(code_a, check[0].chr == '1') +
+      make_symbol(code_b, check[1].chr == '1') +
+      make_symbol(code_c, check[2].chr == '1') +
+      make_symbol(code_d, check[3].chr == '1') +
+      make_symbol(code_e, check[4].chr == '1') +
       make_symbol(code_f, check[5].chr == '1') +
-      make_symbol(code_g, check[4].chr == '1') +
-      make_symbol(code_h, check[3].chr == '1') +
-      make_symbol(code_i, check[2].chr == '1') +
-      make_symbol(code_j, check[1].chr == '1')
+      make_symbol(code_g, check[6].chr == '1') +
+      make_symbol(code_h, check[7].chr == '1') +
+      make_symbol(code_i, check[8].chr == '1') +
+      make_symbol(code_j, check[9].chr == '1')
 
     print bitstring, "\n";
     print perturb(bitstring), "\n";
@@ -169,14 +172,14 @@ class IMBarcode
   # Table I contains 5-of-13 codewords, while Table II contains
   # 2-of-13.  This is a concatenation of both of them.
 
-  # I'm not sure why this particular representation was chosen.
+  # I have no idea why this particular representation was chosen.
 
   def reflected_m_of_n(code_in)
     if (code_in > CODEWORDS.length)
       throw Exception.new("Code #{code_in} is out of range for this barcode symbology")
     end
 
-    return sprintf("%b", CODEWORDS[code_in])
+    return sprintf("%b", CODEWORDS[code_in]).rjust(13, '0')
   end
 
   # If the corresponding CRC bit for this codeword is set, invert all
@@ -194,7 +197,7 @@ class IMBarcode
 
     print "Codeword #{codeword} becomes #{symbol} invert=#{invert}\n"
 
-    return symbol
+    return symbol.reverse
   end
 
 
@@ -226,7 +229,12 @@ class IMBarcode
 
     barcode = " " * 65
 
+    bitstring = bitstring.rjust(130, '0')
+
+    printf("Perturbing:\n%s\n%s\n", bitstring, "-" * 130)
+
     for i in 0..(descender.size()-1)
+      printf("   perturbing % 3d @% 4d /% 4d = %d/%d", i, ascender[i], descender[i], bitstring[ascender[i]].chr, bitstring[descender[i]].chr)
       down = bitstring[descender[i]].chr
       up = bitstring[ascender[i]].chr
 
@@ -240,6 +248,7 @@ class IMBarcode
       when "11"  # full bar
         barcode[i] = "F"
       end
+    printf(" = %c\n", barcode[i])
     end
     return barcode
   end
