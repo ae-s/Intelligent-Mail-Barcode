@@ -93,7 +93,10 @@ class IMBarcode
     @binary = binary
     printf("Encoded bitstring: %X\n", @binary)
 
-    check = crc(binary, 102)
+    check = crc(sprintf("%b", binary).rjust(102, '0'))
+    check = check.rjust(11, '0').reverse
+
+    print "Checksum is #{check}\n"
 
     # Divide out into codewords
     binary, code_j = binary.divmod(636)
@@ -108,12 +111,6 @@ class IMBarcode
 
     # Alter codeword J for orientation information
     code_j *= 2
-
-    check = sprintf('%011b', check)
-    print "Checksum is #{check}\n"
-
-    check = check.rjust(11, '0').reverse
-    print "Checksum is #{check}\n"
 
     # Stow bit 11 of the checksum in codeword A
     if (check[10].chr == '1')
@@ -141,9 +138,29 @@ class IMBarcode
 
   end
 
-  ## TODO translate the CRC code on page 24
-  def crc(data, len=102)
-    return 0x751;
+  ## Really stupid CRC implementation
+  def crc(data)
+    polynomial = sprintf("%b", 0xF35)
+
+    max = data.size
+    data = data + '0' * (polynomial.size)
+
+    for shift in (0)..(max - 1)
+#      print "data[#{shift}] = #{data[shift]}\n"
+      if data[shift].chr == "1"
+        print data, "\n"
+        print '.' * shift, polynomial, "\n"
+        for off in (shift)..(shift + polynomial.size)
+          if (data[off] == polynomial[off - shift])
+            data[off] = '0'
+          else
+            data[off] = '1'
+          end
+        end
+      end
+    end
+
+    return data[(max)..(data.size)]
   end
 
   # This is the penultimate encoding step.  The ten codewords each
